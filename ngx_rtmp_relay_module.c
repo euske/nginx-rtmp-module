@@ -438,6 +438,26 @@ ngx_rtmp_relay_create_connection(ngx_rtmp_conf_ctx_t *cctx, ngx_str_t* name,
         }
     }
 
+    if (rctx->play_path.len == 0) {
+        if (ngx_rtmp_relay_copy_str(pool, &rctx->play_path, &rctx->name) != NGX_OK) {
+            goto clear;
+        }
+        size_t i;
+        for (i = 0; i < rctx->name.len; i++) {
+            if (rctx->name.data[i] == '/') {
+                rctx->play_path.data += i+1;
+                rctx->play_path.len = rctx->name.len-(i+1);
+                break;
+            }
+        }
+    }
+
+    ngx_log_error(NGX_LOG_INFO, racf->log, 0,
+                  "relay: app='%V', tc_url='%V', page_url='%V', swf_url='%V', "
+                  "flash_ver='%V', play_path='%V', live=%d, start=%d, stop=%d", 
+                  &rctx->app, &rctx->tc_url, &rctx->page_url, &rctx->swf_url,
+                  &rctx->flash_ver, &rctx->play_path, rctx->live, rctx->start, rctx->stop);
+    
     pc = ngx_pcalloc(pool, sizeof(ngx_peer_connection_t));
     if (pc == NULL) {
         goto clear;
@@ -638,6 +658,12 @@ ngx_int_t
 ngx_rtmp_relay_push(ngx_rtmp_session_t *s, ngx_str_t *name,
         ngx_rtmp_relay_target_t *target)
 {
+    if (ngx_strchr(name->data, '/') == NULL) {
+        ngx_log_error(NGX_LOG_INFO, s->connection->log, 0,
+                      "relay: ignored name='%V'", name);
+        return NGX_OK;
+    }
+
     ngx_log_error(NGX_LOG_INFO, s->connection->log, 0,
             "relay: create push name='%V' app='%V' playpath='%V' url='%V'",
             name, &target->app, &target->play_path, &target->url.url);

@@ -224,6 +224,7 @@ ngx_rtmp_live_get_stream(ngx_rtmp_session_t *s, u_char *name, int create)
     ngx_rtmp_live_app_conf_t   *lacf;
     ngx_rtmp_live_stream_t    **stream;
     size_t                      len;
+    size_t                      keylen;
 
     lacf = ngx_rtmp_get_module_app_conf(s, ngx_rtmp_live_module);
     if (lacf == NULL) {
@@ -231,10 +232,16 @@ ngx_rtmp_live_get_stream(ngx_rtmp_session_t *s, u_char *name, int create)
     }
 
     len = ngx_strlen(name);
-    stream = &lacf->streams[ngx_hash_key(name, len) % lacf->nbuckets];
-
+    keylen = 0;
+    while (keylen <= len) {
+        u_char c = name[keylen];
+        if (c == '\0' || c == '/') break;
+        keylen++;
+    }
+    stream = &lacf->streams[ngx_hash_key(name, keylen) % lacf->nbuckets];
+    
     for (; *stream; stream = &(*stream)->next) {
-        if (ngx_strcmp(name, (*stream)->name) == 0) {
+        if (ngx_strncmp(name, (*stream)->name, keylen) == 0) {
             return stream;
         }
     }
