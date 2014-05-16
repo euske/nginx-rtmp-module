@@ -666,6 +666,12 @@ ngx_int_t
 ngx_rtmp_relay_push(ngx_rtmp_session_t *s, ngx_str_t *name,
         ngx_rtmp_relay_target_t *target)
 {
+    if (ngx_strchr(name->data, '/') == NULL) {
+        ngx_log_error(NGX_LOG_INFO, s->connection->log, 0,
+                      "relay: ignored name='%V'", name);
+        return NGX_OK;
+    }
+
     ngx_log_error(NGX_LOG_INFO, s->connection->log, 0,
             "relay: create push name='%V' app='%V' playpath='%V' url='%V'",
             name, &target->app, &target->play_path, &target->url.url);
