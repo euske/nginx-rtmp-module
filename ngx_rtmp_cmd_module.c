@@ -500,7 +500,8 @@ ngx_rtmp_cmd_publish_init(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
         return NGX_ERROR;
     }
 
-    ngx_rtmp_cmd_fill_args(v.name, v.args);
+    /* prevent a hitbox key from being replaced. */
+    /* ngx_rtmp_cmd_fill_args(v.name, v.args); */
 
     ngx_log_error(NGX_LOG_INFO, s->connection->log, 0,
                   "publish: name='%s' args='%s' type=%s silent=%d",

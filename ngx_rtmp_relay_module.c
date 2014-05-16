@@ -438,6 +438,34 @@ ngx_rtmp_relay_create_connection(ngx_rtmp_conf_ctx_t *cctx, ngx_str_t* name,
         }
     }
 
+    if (rctx->play_path.len == 0) {
+	ngx_rtmp_relay_target_t **t = racf->pushes.elts;
+	ngx_uint_t i;
+	first = rctx->name.data;
+	last = rctx->name.data + rctx->name.len;
+	for (i = 0; i < racf->pushes.nelts; ++i, ++t) {
+	    p = ngx_strlchr(first, last, '/');
+	    if (p == NULL) {
+		p = last;
+	    }
+	    if (target == *t) {
+		v.data = first;
+		v.len = p - first;
+                if (ngx_rtmp_relay_copy_str(pool, &rctx->play_path, &v)
+                        != NGX_OK)
+                {
+                    goto clear;
+                }
+		ngx_log_error(NGX_LOG_INFO, racf->log, 0,
+			      "relay: split url='%V' playpath='%V'",
+			      &target->url.url,
+			      &rctx->play_path);
+		break;
+	    }
+	    first = p+1;
+	}
+    }
+
     pc = ngx_pcalloc(pool, sizeof(ngx_peer_connection_t));
     if (pc == NULL) {
         goto clear;
