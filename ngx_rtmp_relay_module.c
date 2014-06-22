@@ -283,6 +283,13 @@ ngx_rtmp_relay_push_reconnect(ngx_event_t *ev)
             continue;
         }
 
+	if (ngx_strcasecmp(target->url.url.data, (u_char *) "null") == 0) {
+	    /* null relay */
+	    ngx_log_error(NGX_LOG_INFO, s->connection->log, 0,
+			  "relay: split(%d): null relay", n);
+	    continue;
+	}
+
         if (ngx_rtmp_relay_push(s, &ctx->name, target) == NGX_OK) {
             continue;
         }
@@ -457,8 +464,8 @@ ngx_rtmp_relay_create_connection(ngx_rtmp_conf_ctx_t *cctx, ngx_str_t* name,
                     goto clear;
                 }
 		ngx_log_error(NGX_LOG_INFO, racf->log, 0,
-			      "relay: split url='%V' playpath='%V'",
-			      &target->url.url,
+			      "relay: split(%d): url='%V' playpath='%V'",
+			      i, &target->url.url,
 			      &rctx->play_path);
 		break;
 	    }
@@ -717,6 +724,13 @@ ngx_rtmp_relay_publish(ngx_rtmp_session_t *s, ngx_rtmp_publish_t *v)
         {
             continue;
         }
+
+	if (ngx_strcasecmp(target->url.url.data, (u_char *) "null") == 0) {
+	    /* null relay */
+	    ngx_log_error(NGX_LOG_INFO, s->connection->log, 0,
+			  "relay: split(%d): null relay", n);
+	    continue;
+	}
 
         if (ngx_rtmp_relay_push(s, &name, target) == NGX_OK) {
             continue;
@@ -1505,6 +1519,12 @@ ngx_rtmp_relay_push_pull(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     if (ngx_strncasecmp(u->url.data, (u_char *) "rtmp://", 7) == 0) {
         u->url.data += 7;
         u->url.len  -= 7;
+    }
+
+    if (!is_pull && ngx_strcasecmp(target->url.url.data, (u_char *) "null") == 0) {
+        t = ngx_array_push(&racf->pushes);
+	*t = target;
+	return NGX_CONF_OK;
     }
 
     if (ngx_parse_url(cf->pool, u) != NGX_OK) {
